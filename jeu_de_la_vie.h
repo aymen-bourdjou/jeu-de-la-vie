@@ -39,7 +39,7 @@ public:
  
     void executer(int generations) {
         for (int i = 0; i < generations; ++i) {
-            std::cout << "Génération " << i + 1 << ":" << std::endl;
+           
             mettreAJour();
             grille->afficher();
             std::cout << std::endl;

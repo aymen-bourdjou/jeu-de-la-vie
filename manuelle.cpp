@@ -1,6 +1,37 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp> // Pour sf::sleep
+#include <iostream>
+#include <stdexcept>
 #include "jeu_de_la_vie.h"
+
+// Fonction pour afficher la grille
+void afficherGrille(sf::RenderWindow& fenetre, const Grille& grille, int largeurFenetre, int hauteurFenetre) {
+    int lignes = grille.getLignes();
+    int colonnes = grille.getColonnes();
+    
+    // Calcul de la taille dynamique des cellules
+    float tailleCelluleX = static_cast<float>(largeurFenetre) / colonnes;
+    float tailleCelluleY = static_cast<float>(hauteurFenetre) / lignes;
+
+    for (int i = 0; i < lignes; ++i) {
+        for (int j = 0; j < colonnes; ++j) {
+            sf::RectangleShape cellule(sf::Vector2f(tailleCelluleX, tailleCelluleY));
+            cellule.setPosition(j * tailleCelluleX, i * tailleCelluleY);
+
+            // Détermine la couleur de la cellule
+            if (grille.getCellule(i, j)) {
+                cellule.setFillColor(sf::Color::Blue); // Cellule vivante
+            } else {
+                cellule.setFillColor(sf::Color::White); // Cellule morte
+            }
+
+            cellule.setOutlineColor(sf::Color::Black); // Contour noir
+            cellule.setOutlineThickness(1);           // Épaisseur du contour
+
+            fenetre.draw(cellule);
+        }
+    }
+}
 
 int main() {
     int lignes, colonnes;
@@ -11,7 +42,7 @@ int main() {
 
     Grille grille(lignes, colonnes);
     try {
-        grille.initializeFromFile("data.txt");
+        grille.initialiserDepuisFichier("data.txt");
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
         return 1;
@@ -22,40 +53,37 @@ int main() {
     std::cout << "Entrez le nombre de générations : ";
     std::cin >> generations;
 
-    // Création de la fenêtre SFML avec une taille réduite
-    int largeurFenetre = 400;  
-    int hauteurFenetre = 300;  
+    // Taille de la fenêtre SFML
+    int largeurFenetre = 800;
+    int hauteurFenetre = 600;
     sf::RenderWindow fenetre(sf::VideoMode(largeurFenetre, hauteurFenetre), "Jeu de la Vie");
-    fenetre.setFramerateLimit(10); 
+    fenetre.setFramerateLimit(10);
 
-    // Boucle principale
+    // Simulation des générations
     for (int gen = 0; gen < generations; ++gen) {
-       
         jeu.executer(1);
 
-        // Affichage de la grille
         fenetre.clear();
-        for (int i = 0; i < lignes; ++i) {
-            for (int j = 0; j < colonnes; ++j) {
-                sf::RectangleShape cellule(sf::Vector2f(10, 10)); 
-                cellule.setPosition(j * 10, i * 10); 
-
-                // Détermine la couleur de la cellule
-                if (grille.getCellule(i, j)) {
-                    cellule.setFillColor(sf::Color::Green); 
-                } else {
-                    cellule.setFillColor(sf::Color::Black); 
-                }
-
-                // Vérifie si la cellule est dans la fenêtre avant de la dessiner
-                if (cellule.getPosition().x < largeurFenetre && cellule.getPosition().y < hauteurFenetre) {
-                    fenetre.draw(cellule);
-                }
-            }
-        }
+        afficherGrille(fenetre, grille, largeurFenetre, hauteurFenetre);
         fenetre.display();
 
-        // Gestion des événements
+        sf::Event evenement;
+        while (fenetre.pollEvent(evenement)) {
+            if (evenement.type == sf::Event::Closed) {
+                fenetre.close();
+                return 0;
+            }
+        }
+
+        sf::sleep(sf::milliseconds(100)); // Pause entre les générations
+    }
+
+    // Pause pour afficher la grille finale
+    while (fenetre.isOpen()) {
+        fenetre.clear();
+        afficherGrille(fenetre, grille, largeurFenetre, hauteurFenetre);
+        fenetre.display();
+
         sf::Event evenement;
         while (fenetre.pollEvent(evenement)) {
             if (evenement.type == sf::Event::Closed) {
@@ -63,45 +91,8 @@ int main() {
             }
         }
 
-        // Pause entre les générations
-        sf::sleep(sf::milliseconds(100)); 
+        sf::sleep(sf::milliseconds(100));
     }
-
-    // Pause à la fin pour voir le résultat final
-    bool enCours = true;
-    while (enCours) {
-        // Affichage de la grille finale
-        fenetre.clear();
-        for (int i = 0; i < lignes; ++i) {
-            for (int j = 0; j < colonnes; ++j) {
-                sf::RectangleShape cellule(sf::Vector2f(10, 10)); // Taille de chaque cellule
-                cellule.setPosition(j * 10, i * 10); // Position de la cellule
-
-                // Détermine la couleur de la cellule
-                if (grille.getCellule(i, j)) {
-                    cellule.setFillColor(sf::Color::Green); // Cellule vivante
-                } else {
-                    cellule.setFillColor(sf::Color::Black); // Cellule morte
-                }
-
-                // Vérifie si la cellule est dans la fenêtre avant de la dessiner
-                if (cellule.getPosition().x < largeurFenetre && cellule.getPosition().y < hauteurFenetre) {
-                    fenetre.draw(cellule);
-                }
-            }
-        }
-        fenetre.display();
-
-        // Gestion des événements
-        sf::Event evenement;
-        while (fenetre.pollEvent(evenement)) {
-            if (evenement.type == sf::Event::Closed) {
-                enCours = false; // Ferme la fenêtre
-            }
-        }
-
-        // Pause pour permettre à l'utilisateur de voir le résultat final
-        sf::sleep(sf::milliseconds(100));    }
 
     return 0;
 }
